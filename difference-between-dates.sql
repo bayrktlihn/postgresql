@@ -12,9 +12,9 @@ DECLARE
     addedMonth       date;
     addedDay         date;
     result           record;
-    addedMonthResult boolean;
-    addedDayResult   boolean;
-    addedYearResult  boolean;
+    addedMonthResult boolean := false;
+    addedDayResult   boolean := false;
+    addedYearResult  boolean := false;
     maxYear int := 100;
 BEGIN
     while p_dts < p_dte
@@ -35,36 +35,43 @@ BEGIN
                 end loop;
 
 
-
-
             addedMonthResult := false;
-            for i in reverse 11..1
-                loop
-                    addedMonth := p_dts + cast(concat_ws(' ', cast(i as varchar), 'month') as interval);
+			if addedYearResult = false then
+	            for i in reverse 11..1
+	                loop
+	                    addedMonth := p_dts + cast(concat_ws(' ', cast(i as varchar), 'month') as interval);
 
-                    if addedMonth <= p_dte and date_part('day', addedMonth) = date_part('day', p_dts) then
-                        totalMonth := totalMonth + i;
-                        p_dts := addedMonth;
-                        addedMonthResult := true;
-                        exit;
-                    end if;
+	                    if addedMonth <= p_dte and date_part('day', addedMonth) = date_part('day', p_dts) then
+	                        totalMonth := totalMonth + i;
+	                        p_dts := addedMonth;
+	                        addedMonthResult := true;
+	                        exit;
+	                    end if;
 
-                end loop;
+	                end loop;
+
+			end if;
 
 
 
-            addedDayResult := false;
-            for i in reverse 31..1
-                loop
-                    addedDay := p_dts + cast(concat_ws(' ', cast(i as varchar), 'day') as interval);
+			addedDayResult := false;
+			if addedYearResult = false and addedMonthResult = false  then
+	            for i in reverse 31..1
+	                loop
+	                    addedDay := p_dts + cast(concat_ws(' ', cast(i as varchar), 'day') as interval);
 
-                    if addedDay <= p_dte then
-                        totalDay := totalDay + i;
-                        p_dts := addedDay;
-                        addedDayResult := true;
-                        exit;
-                    end if;
-                end loop;
+	                    if addedDay <= p_dte then
+	                        totalDay := totalDay + i;
+	                        p_dts := addedDay;
+	                        addedDayResult := true;
+	                        exit;
+	                    end if;
+	                end loop;
+			end if;
+
+
+
+
 
         end loop;
     select totalYear as yil, totalMonth as ay, totalDay as gun into result;
