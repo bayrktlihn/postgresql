@@ -1,42 +1,74 @@
-CREATE OR replace FUNCTION fn_difference_between_dates(p_start_date date, p_end_date date)
-RETURNS record LANGUAGE plpgsql AS $$
+-- DROP FUNCTION e_belediye.fn_get_difference_between_dates(date, date);
+
+CREATE OR REPLACE FUNCTION e_belediye.fn_get_difference_between_dates(p_dts date, p_dte date)
+ RETURNS record
+ LANGUAGE plpgsql
+AS $function$
 DECLARE
-	startDate date;
-	endDate date;
-	oneYearAdded date;
-	oneMonthAdded date;
-	oneDayAdded date;
-	yearCount int := 0;
-	monthCount int := 0;
-	dayCount int := 0;
-	RESULT record;
+    totalMonth       int := 0;
+    totalYear        int := 0;
+    totalDay         int := 0;
+    addedYear        date;
+    addedMonth       date;
+    addedDay         date;
+    result           record;
+    addedMonthResult boolean;
+    addedDayResult   boolean;
+    addedYearResult  boolean;
+    maxYear int := 100;
 BEGIN
-	
-	startDate := p_start_date;
-	endDate := p_end_date;
-	
-	while startDate < endDate loop
-		
-		oneYearAdded := CAST((startDate + INTERVAL '1 year') AS date);
-		oneMonthAdded := CAST((startDate + INTERVAL '1 month') AS date);
-		oneDayAdded := CAST((startDate + INTERVAL '1 day') AS date);
-		
-		
-		IF oneYearAdded <= endDate AND date_part('day', oneYearAdded) = date_part('day', startDate)  THEN 
-			yearCount := yearCount + 1;
-			startDate := oneYearAdded;
-		elsif oneMonthAdded <= endDate AND date_part('day', oneMonthAdded) = date_part('day', startDate) THEN
-			monthCount := monthCount + 1;
-			startDate := oneMonthAdded;
-		elsif oneDayAdded <= endDate THEN
-			dayCount := dayCount + 1;
-			startDate := oneDayAdded;
-		END IF;
-		
-	end loop;
+    while p_dts < p_dte
+        loop
 
-	SELECT yearCount AS YEAR, monthCount AS MONTH, dayCount AS DAY INTO RESULT;
+            addedYearResult := false;
+            for i in reverse maxYear..1
+                loop
+                    addedYear := p_dts + cast(concat_ws(' ', cast(i as varchar), 'year') as interval);
 
-	RETURN RESULT;	
-END;
-$$
+                    if addedYear <= p_dte and date_part('day', addedYear) = date_part('day', p_dts) then
+                        p_dts := addedYear;
+                        totalYear := totalYear + i;
+                        addedYearResult := true;
+                        exit;
+                    end if;
+
+                end loop;
+
+
+
+
+            addedMonthResult := false;
+            for i in reverse 11..1
+                loop
+                    addedMonth := p_dts + cast(concat_ws(' ', cast(i as varchar), 'month') as interval);
+
+                    if addedMonth <= p_dte and date_part('day', addedMonth) = date_part('day', p_dts) then
+                        totalMonth := totalMonth + i;
+                        p_dts := addedMonth;
+                        addedMonthResult := true;
+                        exit;
+                    end if;
+
+                end loop;
+
+
+
+            addedDayResult := false;
+            for i in reverse 31..1
+                loop
+                    addedDay := p_dts + cast(concat_ws(' ', cast(i as varchar), 'day') as interval);
+
+                    if addedDay <= p_dte then
+                        totalDay := totalDay + i;
+                        p_dts := addedDay;
+                        addedDayResult := true;
+                        exit;
+                    end if;
+                end loop;
+
+        end loop;
+    select totalYear as yil, totalMonth as ay, totalDay as gun into result;
+    return result;
+END ;
+$function$
+;
